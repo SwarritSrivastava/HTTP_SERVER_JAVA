@@ -1,5 +1,5 @@
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -47,7 +47,8 @@ public class Main {
     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); 
     StringBuilder strbuild = new StringBuilder();
     String line;
-    while((line = in.readLine()) != null && !line.isEmpty()) {
+    while((line = in.readLine()) != null && !line.isEmpty()) 
+    {
       strbuild.append(line).append("\r\n");
     }
     String request = strbuild.toString();
@@ -76,7 +77,7 @@ public class Main {
       else if(arr[1].startsWith("/files" )){
         String[] str = arr[1].split("/");
         System.out.println(str[2]);
-        Path filePath = Paths.get( str[2] + ".txt");
+        Path filePath = Paths.get(str[2]);
         System.out.println(filePath);
         if(!Files.exists(filePath)) {
           httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
@@ -103,16 +104,36 @@ public class Main {
     else if(request.startsWith("POST")) {
       String[] arr = request.split(" ");
       System.out.println(Arrays.toString(arr));
-      String httpResponse;
+      String httpResponse = new String();
+
       if(arr[1].startsWith("/files")) {
         String[] str = arr[1].split("/");
-        int length = Integer.parseInt(arr[arr.length - 1 ].trim());
-        byte[] bodybytes = new byte[length];
-        clientSocket.getInputStream().read(bodybytes);
-        FileOutputStream fout = new FileOutputStream(str[2]);
-        fout.write(bodybytes);
-        fout.close();
+        System.out.println(arr[arr.length-2]);
+        String[] splitforlength = arr[arr.length - 2].split("\n");
+        System.out.println(Arrays.toString(splitforlength));
+        int length = Integer.parseInt(String.valueOf(splitforlength[0].trim()));
+        char[] body = new char[length];
+        in.read(body,0,length);
+        // int totalRead = 0;
+        // while (totalRead < length) {
+        //   int readNow = in.read(body, totalRead, length - totalRead);
+        //   if (readNow == -1) break;
+        //   totalRead += readNow;
+        // }
+        
+        System.out.println(Arrays.toString(body));
+        FileWriter filewriter = new FileWriter(str[2]);
+        filewriter.write(body);
+        filewriter.close();
+        httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
+        clientSocket.getOutputStream().write(httpResponse.getBytes());
       }
+      else {  
+        httpResponse = "HTTP 1.1 404 ERROR \r\n";
+      }
+      OutputStream out = clientSocket.getOutputStream();
+      out.write(httpResponse.getBytes());
+      out.flush();
     }
   }
 }
